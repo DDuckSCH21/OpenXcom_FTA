@@ -2448,6 +2448,7 @@ void GeoscapeState::time1Day()
 	Mod *mod = _game->getMod();
 	bool psiStrengthEval = (Options::psiStrengthEval && saveGame->isResearched(mod->getPsiRequirements()));
 	bool availableIntelInformed = false, completedIntelInformed = false;
+	std::vector<Soldier*> promotedSoldiers;
 	for (Base *base : *_game->getSavedGame()->getBases())
 	{
 		// Handle facility construction
@@ -2505,7 +2506,7 @@ void GeoscapeState::time1Day()
 				}
 			}
 			std::string desc = "";
-			project->roll(_game,
+			bool rolled = project->roll(_game,
 				*_globe,
 				project->getStepProgress(soldiers,
 					_game->getMod(),
@@ -2513,10 +2514,30 @@ void GeoscapeState::time1Day()
 				intelProjectFinished);
 
 			// #FINNIKTODO - special project rules processing here!
-			if (intelProjectFinished && !completedIntelInformed)
+
+			if (rolled)
+			{
+				for (std::vector<Soldier*>::const_iterator s = base->getSoldiers()->begin(); s != base->getSoldiers()->end(); ++s)
+				{
+					if ((*s)->getIntelProject() == project)
+					{
+						(*s)->improvePrimaryStats((*s)->getIntelExperience(), ROLE_AGENT);
+						(*s)->clearIntelExperience();
+						if ((*s)->rolePromoteSoldier(ROLE_AGENT))
+						{
+							promotedSoldiers.push_back((*s));
+						}
+						if (intelProjectFinished)
+						{
+							(*s)->setIntelProject(0);
+						}
+					}
+				}
+			}
+			
+			if (intelProjectFinished)
 			{
 				_game->pushState(new IntelCompleteState(project, this, base));
-				completedIntelInformed = true;
 			}
 		}
 
@@ -2537,7 +2558,7 @@ void GeoscapeState::time1Day()
 			if (!found && _game->getSavedGame()->isResearched(rule->getRequiredResearch(), false))
 			{
 				//let's try to make a project
-				double minCost = rule->getCost() / 2;
+				double minCost = static_cast<double>(rule->getCost()) / 2;
 				double maxCost = rule->getCost() * 1.5;
 				IntelProject* project = new IntelProject(rule, base, RNG::generate(minCost, maxCost));
 				// there are much more conditions depending on various properies
@@ -2561,7 +2582,27 @@ void GeoscapeState::time1Day()
 		// Handle prisoner
 		for (auto prisoner : base->getPrisoners())
 		{
-			prisoner->think(*_game); //that simple =) 
+			if (prisoner->think(*_game))
+			{
+				for (std::vector<Soldier*>::const_iterator s = base->getSoldiers()->begin(); s != base->getSoldiers()->end(); ++s)
+				{
+					if ((*s)->getActivePrisoner() == prisoner)
+					{
+						(*s)->improvePrimaryStats((*s)->getIntelExperience(), ROLE_AGENT);
+						(*s)->clearEngineerExperience();
+						if ((*s)->rolePromoteSoldier(ROLE_AGENT))
+						{
+							promotedSoldiers.push_back((*s));
+						}
+					}
+				}
+			}
+		}
+
+		//handle promotion
+		if (!promotedSoldiers.empty() && _fta)
+		{
+			_game->pushState(new PromotionsState);
 		}
 
 		// Handle soldier wounds and martial training
@@ -2616,23 +2657,6 @@ void GeoscapeState::time1Day()
 			{
 				popup(new TrainingFinishedState(base, psiTrainingFinishedList, true));
 			}
-		}
-	}
-
-	// check and remove disabled projects from ongoing research
-	for (std::vector<Base*>::iterator i = _game->getSavedGame()->getBases()->begin(); i != _game->getSavedGame()->getBases()->end(); ++i)
-	{
-		std::vector<ResearchProject*> obsolete;
-		for (std::vector<ResearchProject*>::const_iterator iter = (*i)->getResearch().begin(); iter != (*i)->getResearch().end(); ++iter)
-		{
-			if (_game->getSavedGame()->isResearchRuleStatusDisabled((*iter)->getRules()->getName()))
-			{
-				obsolete.push_back(*iter);
-			}
-		}
-		for (std::vector<ResearchProject*>::const_iterator iter = obsolete.begin(); iter != obsolete.end(); ++iter)
-		{
-			(*i)->removeResearch(*iter);
 		}
 	}
 
@@ -4765,6 +4789,23 @@ void GeoscapeState::handleResearch(Base* base)
 		// 2. handle items spawned by research
 		// 3. handle events spawned by research
 		saveGame->handlePrimaryResearchSideEffects(topicsToCheck, _game->getMod(), base);
+	}
+
+	// check and remove disabled projects from ongoing research
+	for (std::vector<Base*>::iterator i = _game->getSavedGame()->getBases()->begin(); i != _game->getSavedGame()->getBases()->end(); ++i)
+	{
+		std::vector<ResearchProject*> obsolete;
+		for (std::vector<ResearchProject*>::const_iterator iter = (*i)->getResearch().begin(); iter != (*i)->getResearch().end(); ++iter)
+		{
+			if (_game->getSavedGame()->isResearchRuleStatusDisabled((*iter)->getRules()->getName()))
+			{
+				obsolete.push_back(*iter);
+			}
+		}
+		for (std::vector<ResearchProject*>::const_iterator iter = obsolete.begin(); iter != obsolete.end(); ++iter)
+		{
+			(*i)->removeResearch(*iter);
+		}
 	}
 
 	//oh, and don't forget about FtA promotions!

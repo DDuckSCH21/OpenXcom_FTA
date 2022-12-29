@@ -125,10 +125,11 @@ void BasePrisoner::setMorale(int morale)
  * Geoscape logic 
  * @param engine - game pointer
  */
-void BasePrisoner::think(Game& engine)
+bool BasePrisoner::think(Game &engine)
 {
 	const Mod& mod = *engine.getMod();
 	SavedGame& save = *engine.getSavedGame();
+	bool result = false;
 
 	//populate data
 	PrisonerState prisonerState = getPrisonerState();
@@ -239,6 +240,7 @@ void BasePrisoner::think(Game& engine)
 			_interrogationProgress += progress;
 			if (_interrogationProgress >= breakpoint)
 			{
+				result = true;
 				_interrogationProgress = 0;
 				// give research if any
 				if (!rules.getUnlockedResearches().empty())
@@ -398,6 +400,7 @@ void BasePrisoner::think(Game& engine)
 			_recruitingProgress += progress;
 			if (_recruitingProgress >= breakpoint)
 			{
+				result = true;
 				_recruitingProgress = 0;
 				auto events = rules.getSpawnedEvents();
 				if (!events.empty() && RNG::percent(rules.getEventChance()))
@@ -474,6 +477,7 @@ void BasePrisoner::think(Game& engine)
 			_recruitingProgress -= floor(_recruitingProgress * 0.15);
 		}
 	}
+	return result;
 }
 
 void BasePrisoner::die()
