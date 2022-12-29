@@ -126,7 +126,7 @@ SoldierTransformationState::SoldierTransformationState(RuleSoldierTransformation
 	_btnStart->onMouseClick((ActionHandler)&SoldierTransformationState::btnStartClick);
 	_btnStart->onKeyboardPress((ActionHandler)&SoldierTransformationState::btnStartClick, Options::keyOk);
 
-	_btnStats->setText(tr("STR_STATS"));
+	_btnStats->setText(tr("STR_STATS_UC"));
 	_btnStats->onMouseClick((ActionHandler)&SoldierTransformationState::btnStatsClick);
 
 	if (_filteredListOfSoldiers->size() > 1)
@@ -748,11 +748,11 @@ void SoldierTransformationState::showToolTip(Action* action)
 }
 
 
-template<typename T, typename I>
-void SoldierTransformationState::addScriptTags(const ScriptValues<T, I>& values)
+template<typename T, typename J>
+void SoldierTransformationState::addScriptTags(const ScriptValues<T, J>& values)
 {
 	auto& tagValues = values.getValuesRaw();
-	ArgEnum index = ScriptParserBase::getArgType<ScriptTag<T, I>>();
+	ArgEnum index = ScriptParserBase::getArgType<ScriptTag<T, J>>();
 	auto tagNames = _game->getMod()->getScriptGlobal()->getTagNames().at(index);
 	int row = 0;
 	for (size_t i = 0; i < tagValues.size(); ++i)
@@ -769,10 +769,10 @@ void SoldierTransformationState::addScriptTags(const ScriptValues<T, I>& values)
 	}
 }
 
-template<typename T, typename I>
-void SoldierTransformationState::getScriptTags(const ScriptValues<T, I>& vec, int i)
+template<typename T, typename J>
+void SoldierTransformationState::getScriptTags(const ScriptValues<T, J>& vec, int i)
 {
-	ArgEnum index = ScriptParserBase::getArgType<ScriptTag<T, I>>();
+	ArgEnum index = ScriptParserBase::getArgType<ScriptTag<T, J>>();
 	auto tagNames = _game->getMod()->getScriptGlobal()->getTagNames().at(index);
 	std::ostringstream ss;
 	ss << tagNames.values[i].name.toString().substr(4) << "_DESCRIPTION";

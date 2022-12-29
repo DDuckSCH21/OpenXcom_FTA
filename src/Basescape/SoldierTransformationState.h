@@ -80,11 +80,11 @@ public:
 	/// Handler for showing tooltip.
 	void showToolTip(Action* action);
 
-	template<typename T, typename I>
-	void addScriptTags(const ScriptValues<T, I>& vec);
+	template<typename T, typename J>
+	void addScriptTags(const ScriptValues<T, J>& vec);
 
-	template<typename T, typename I>
-	void getScriptTags(const ScriptValues<T, I>& vec, int i);
+	template<typename T, typename J>
+	void getScriptTags(const ScriptValues<T, J>& vec, int i);
 
 };
 

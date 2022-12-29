@@ -24,7 +24,6 @@
 #include "../Engine/Language.h"
 #include "../Engine/Options.h"
 #include "../Engine/ScriptBind.h"
-#include "../Engine/RNG.h"
 #include "Craft.h"
 #include "../Savegame/CovertOperation.h"
 #include "../Savegame/ResearchProject.h"
@@ -2064,19 +2063,27 @@ bool Soldier::isEligibleForTransformation(RuleSoldierTransformation *transformat
 	// Does this soldier meet the minimum stat requirements for the project?
 	UnitStats currentStats = transformationRule->getIncludeBonusesForMinStats() ? _tmpStatsWithSoldierBonuses: _currentStats;
 	UnitStats minStats = transformationRule->getRequiredMinStats();
-	if (currentStats.tu < minStats.tu ||
-		currentStats.stamina < minStats.stamina ||
-		currentStats.health < minStats.health ||
-		currentStats.bravery < minStats.bravery ||
-		currentStats.reactions < minStats.reactions ||
-		currentStats.firing < minStats.firing ||
-		currentStats.throwing < minStats.throwing ||
-		currentStats.melee < minStats.melee ||
-		currentStats.mana < minStats.mana ||
-		currentStats.strength < minStats.strength ||
-		currentStats.psiStrength < minStats.psiStrength ||
-		(currentStats.psiSkill < minStats.psiSkill && minStats.psiSkill != 0)) // The != 0 is required for the "psi training at any time" option, as it sets skill to negative in training
+	bool minStatReq = true;
+	currentStats.fieldLoop(
+		[&](UnitStats::Ptr p)
+		{
+			if (currentStats.*p < minStats.*p)
+				minStatReq = false;
+		}
+	);
+
+	if (!minStatReq)
 		return false;
+
+	// Does the soldier met role rank requirements?
+	if (!transformationRule->getRoleRankRequirments().empty())
+	{
+		for (auto req : transformationRule->getRoleRankRequirments())
+		{
+			if (getRoleRank(req.first) < req.second)
+				return false;
+		}
+	}
 
 	// Does the soldier have the required commendations?
 	for (auto reqd_comm : transformationRule->getRequiredCommendations())
@@ -2188,6 +2195,9 @@ void Soldier::transform(const Mod *mod, RuleSoldierTransformation *transformatio
 		// change stats
 		_currentStats += calculateStatChanges(mod, transformationRule, sourceSoldier, 0, sourceSoldierType);
 
+		// assign new role with rank 1
+		addRole(transformationRule->getRoleToAdd());
+
 		// and randomize stats where needed
 		{
 			Soldier *tmpSoldier = new Soldier(_rules, nullptr, 0 /*nationality*/, _id);
@@ -2264,15 +2274,14 @@ void Soldier::transform(const Mod *mod, RuleSoldierTransformation *transformatio
  */
 void Soldier::postponeTransformation(RuleSoldierTransformation* transformationRule)
 {
+	clearBaseDuty();
 	_training = false;
 	_returnToTrainingWhenHealed = false;
 	_psiTraining = false;
 	_craft = 0;
-	_researchProject = 0;
-	_production = 0;
 
 	int time = transformationRule->getTransformationTime();
-	//time += RNG::generate(time * (-0.2), time * 0.2); // let's see how it goes first
+	time += RNG::generate(time * -0.2, time * 0.2);
 	_pendingTransformations[transformationRule->getName()] = time;
 }
 
