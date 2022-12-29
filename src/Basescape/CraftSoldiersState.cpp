@@ -18,7 +18,6 @@
  */
 #include "CraftSoldiersState.h"
 #include <algorithm>
-#include <climits>
 #include <algorithm>
 #include "../Engine/Action.h"
 #include "../Engine/Game.h"
@@ -426,9 +425,9 @@ void CraftSoldiersState::initList(size_t scrl)
 
 	for (auto& soldier : *_base->getSoldiers())
 	{
-		if (soldier->getRoleRank(ROLE_SOLDIER) > 0 && !_isInterceptor //case for dropship
-			|| _isInterceptor && soldier->getRoleRank(ROLE_PILOT) > 0 //case for interceptor
-			|| _isMultipurpose && (soldier->getRoleRank(ROLE_PILOT) > 0 || soldier->getRoleRank(ROLE_SOLDIER) > 0) //case for multipurpose craft
+		if ((soldier->getRoleRank(ROLE_SOLDIER) > 0 && !_isInterceptor) //case for dropship
+			|| (_isInterceptor && soldier->getRoleRank(ROLE_PILOT) > 0) //case for interceptor
+			|| (_isMultipurpose && (soldier->getRoleRank(ROLE_PILOT) > 0 || soldier->getRoleRank(ROLE_SOLDIER) > 0)) //case for multipurpose craft
 			|| selAction == "STR_ALL_ROLES" //case we want to see everyone
 			|| !_ftaUI)
 		{

@@ -467,11 +467,11 @@ void SoldiersState::initList(size_t scrl)
 			for (auto &soldier : *_base->getSoldiers())
 			{
 				if (selAction == "STR_PERSONNEL_INFO" ||
-					soldier->getRoleRank(ROLE_SOLDIER) > 0 && selAction == "STR_SOLDIER_INFO" ||
-					soldier->getRoleRank(ROLE_PILOT) > 0 && selAction == "STR_PILOT_INFO" ||
-					soldier->getRoleRank(ROLE_AGENT) > 0 && selAction == "STR_AGENT_INFO" ||
-					soldier->getRoleRank(ROLE_SCIENTIST) > 0 && selAction == "STR_SCIENTIST_INFO" ||
-					soldier->getRoleRank(ROLE_ENGINEER) > 0 && selAction == "STR_ENGINEER_INFO")
+				    (soldier->getRoleRank(ROLE_SOLDIER) > 0 && selAction == "STR_SOLDIER_INFO") ||
+				    (soldier->getRoleRank(ROLE_PILOT) > 0 && selAction == "STR_PILOT_INFO") ||
+				    (soldier->getRoleRank(ROLE_AGENT) > 0 && selAction == "STR_AGENT_INFO") ||
+				    (soldier->getRoleRank(ROLE_SCIENTIST) > 0 && selAction == "STR_SCIENTIST_INFO") ||
+				    (soldier->getRoleRank(ROLE_ENGINEER) > 0 && selAction == "STR_ENGINEER_INFO"))
 				{
 					_filteredListOfSoldiers.push_back(soldier);
 					_soldierNumbers.push_back(i); // don't forget soldier's number on the base!
