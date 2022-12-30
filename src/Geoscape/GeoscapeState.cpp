@@ -2020,13 +2020,13 @@ void GeoscapeState::time30Minutes()
 					return (UfoDetection)(value | mask);
 				};
 
-				auto detected = DETECTION_NONE;
-				auto alreadyTracked = ufo->getDetected();
-				auto save = _game->getSavedGame();
+				UfoDetection detected = DETECTION_NONE;
+				bool alreadyTracked = ufo->getDetected();
+				SavedGame *save = _game->getSavedGame();
 
 				for (auto base : *_game->getSavedGame()->getBases())
 				{
-					detected = maskBitOr(detected, base->detect(ufo, save, alreadyTracked));
+					detected = maskBitOr(detected, base->detect(ufo, save, alreadyTracked, save->getTime()->getHour() % 2));
 				}
 
 				for (auto craft : *activeCrafts)
@@ -2488,6 +2488,9 @@ void GeoscapeState::time1Day()
 		// Handle intelligence projects
 		bool intelProjectFinished = false;
 		auto projects = base->getIntelProjects();
+		base->setDeploymentsHintsBonus(false);
+		base->setOperationBonus(0);
+		base->setTrackingBonus(0);
 		for (auto project : projects)
 		{
 			std::map<Soldier*, int> soldiers;
@@ -2506,16 +2509,12 @@ void GeoscapeState::time1Day()
 				}
 			}
 			std::string desc = "";
-			bool rolled = project->roll(_game,
-				*_globe,
-				project->getStepProgress(soldiers,
-					_game->getMod(),
-					_game->getMasterMind()->getLoyaltyPerformanceBonus(), desc, false),
-				intelProjectFinished);
+			int progress = project->getStepProgress(soldiers,
+				_game->getMod(),
+				_game->getMasterMind()->getLoyaltyPerformanceBonus(), desc, false);
 
-			// #FINNIKTODO - special project rules processing here!
 
-			if (rolled)
+			if (project->roll(_game, *_globe, progress,	intelProjectFinished))
 			{
 				for (std::vector<Soldier*>::const_iterator s = base->getSoldiers()->begin(); s != base->getSoldiers()->end(); ++s)
 				{
@@ -2533,6 +2532,22 @@ void GeoscapeState::time1Day()
 						}
 					}
 				}
+			}
+
+			switch (project->getRules()->getSpecialRule())
+			{
+			case INTEL_NONE:
+				break;
+			case INTEL_UFO_TRACKING:
+				base->setTrackingBonus(progress);
+				break;
+			case INTEL_COVERT_OPERATIONS:
+				base->setOperationBonus(progress);
+				break;
+			case INTEL_DEPLOYMENT_HINTS:
+				base->setDeploymentsHintsBonus(progress);
+				break;
+			default: ;
 			}
 			
 			if (intelProjectFinished)
@@ -2835,7 +2850,7 @@ void GeoscapeState::time1Day()
 		}
 
 		int64_t funds = _game->getSavedGame()->getFunds();
-		int64_t income = _game->getSavedGame()->getCountryFunding() + performanceBonus;
+		int64_t income = static_cast<int64_t>(_game->getSavedGame()->getCountryFunding()) + performanceBonus;
 		int64_t maintenance = _game->getSavedGame()->getBaseMaintenance();
 		int64_t projection = funds + income - maintenance;
 		if (projection < 0)

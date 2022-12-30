@@ -100,7 +100,7 @@ private:
 	std::vector<BasePrisoner*> _prisoners;
 	std::vector<Transfer*> _transfers;
 	ItemContainer *_items;
-	int _scientists, _engineers;
+	int _scientists, _engineers, _trackingBonus, _operationsBonus, _deploymentHintsBonus;
 	std::vector<ResearchProject *> _research;
 	std::vector<Production *> _productions;
 	bool _inBattlescape;
@@ -184,7 +184,7 @@ public:
 	/// Sets the base's engineers.
 	void setEngineers(int engineers);
 	/// Checks if a target is detected by the base's radar.
-	UfoDetection detect(const Ufo *target, const SavedGame *save, bool alreadyTracked) const;
+	UfoDetection detect(const Ufo *target, const SavedGame *save, bool alreadyTracked, bool globalSearch = false) const;
 	/// Gets the base's available soldiers.
 	int getAvailableSoldiers(bool checkCombatReadiness = false, bool includeWounded = false) const;
 	/// Gets the base's total soldiers.
@@ -342,6 +342,17 @@ public:
 	BaseSumDailyRecovery getSumRecoveryPerDay() const;
 	/// Removes a craft from the base.
 	std::vector<Craft*>::iterator removeCraft(Craft *craft, bool unload);
+
+	// Base intelligence bonuses.
+	int getOperationBoost() const { return _operationsBonus; }
+	void setOperationBonus(int bonus) { _operationsBonus = bonus; }
+	int getTrackingBonus() const { return _trackingBonus; }
+	int getTrackingBonusReal () const { return ceil(0.8 + 3.5 * std::log10(getTrackingBonus())); }
+	void setTrackingBonus(int bonus) { _trackingBonus = bonus; }
+	int getDeploymentsHints() const { return _deploymentHintsBonus; }
+	void setDeploymentsHintsBonus(int bonus) { _deploymentHintsBonus = bonus; }
+	int getRadarStrength() const;
+	int getGlobalRadarStrenght() const;
 };
 
 }

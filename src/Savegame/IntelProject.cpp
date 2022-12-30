@@ -41,7 +41,7 @@ IntelProject::IntelProject(const RuleIntelProject* rule, Base *base, int cost) :
 int IntelProject::getStepProgress(std::map<Soldier*, int>& assignedAgents, Mod* mod, int rating, std::string& description, bool estimate)
 {
 	int progress = 0;
-	double effort = 0, soldierEffort = 0, statEffort = 0;
+	double effort = 0, soldierEffort = 0, statEffort = 0, specProjectEffort = 0;
 	auto projStats = _rules->getStats();
 	int factor = mod->getIntelTrainingFactor();
 	for (auto s : assignedAgents)
