@@ -667,9 +667,14 @@ double CovertOperationStartState::getOperationOdds()
 			itemCatEffect = itemCatEffect - diffCoeff * heavy * itemConcealedBonusEffect * 4;
 			Log(LOG_DEBUG) << "resulting itemCatEffect: " << itemCatEffect;
 			_chances += itemCatEffect;
-			Log(LOG_DEBUG) << ">>> Operation chances calculation finished with result:" << _chances;
+			Log(LOG_DEBUG) << "after itemCatEffect considered, chances are: " << _chances;
 		}
 	}
+
+	double intelBonus = ((double)_base->getOperationBoost() * 100 ) / 100;
+	Log(LOG_DEBUG) << "intelBonus:" << intelBonus;
+	_chances += intelBonus;
+	Log(LOG_DEBUG) << ">>> Operation chances calculation finished with result:" << _chances;
 
 	if (_chances > 200) // we dont want too high chances
 		_chances = 200;

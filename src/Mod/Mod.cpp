@@ -369,13 +369,13 @@ Mod::Mod()
 	  _coefBattlescape(100), _coefGeoscape(100), _coefDogfight(100), _coefResearch(100), _coefAlienMission(100), _coefUfo(100), _coefAlienBase(100), _noFundsPenalty(200), _noFundsValue(-100000), _performanceCap(0), _performanceFactor(0), _bughuntMinTurn(999),
 	  _bughuntMaxEnemies(2), _bughuntRank(0), _bughuntLowMorale(40), _bughuntTimeUnitsLeft(60), _manaEnabled(false),
 	  _manaBattleUI(false), _manaTrainingPrimary(false), _manaTrainingSecondary(false), _manaReplenishAfterMission(true),
-      _hackingBaseTuCost(5),_hackingFirewallBaseTuCost(10), _hackingFirewallBaseHpCost(5), _hackingStatToTuCoef(250), _hackingStatToHpCoef(500),
-      _loseMoney("loseGame"), _loseRating("loseGame"), _loseDefeat("loseGame"), _ufoGlancingHitThreshold(0),
+	  _hackingBaseTuCost(5), _hackingFirewallBaseTuCost(10), _hackingFirewallBaseHpCost(5), _hackingStatToTuCoef(250), _hackingStatToHpCoef(500),
+	  _loseMoney("loseGame"), _loseRating("loseGame"), _loseDefeat("loseGame"), _ufoGlancingHitThreshold(0),
 	  _ufoBeamWidthParameter(1000), _escortRange(20),
 	  _drawEnemyRadarCircles(1), _escortsJoinFightAgainstHK(true), _hunterKillerFastRetarget(true), _crewEmergencyEvacuationSurvivalChance(100),
 	  _pilotsEmergencyEvacuationSurvivalChance(100), _soldiersPerSergeant(5),
 	  _soldiersPerCaptain(11), _soldiersPerColonel(23), _soldiersPerCommander(30), _pilotAccuracyZeroPoint(55),
-	  _pilotAccuracyRange(40), _pilotReactionsZeroPoint(55), _pilotReactionsRange(60), _pilotCooperationZeroPoint(20), _pilotCooperationRange(20), _pilotTrackingZeroPoint(40), _pilotTrackingRange(50), _performanceBonusFactor(0), _covertOpsExperience(100),
+	  _pilotAccuracyRange(40), _pilotReactionsZeroPoint(55), _pilotReactionsRange(60), _pilotCooperationZeroPoint(20), _pilotCooperationRange(20), _pilotTrackingZeroPoint(40), _pilotTrackingRange(50), _performanceBonusFactor(0), _covertOpsExperienceFactor(100), _covertOpsIntelBonusFactor(100),
 	  _enableNewResearchSorting(false), _displayCustomCategories(0), _shareAmmoCategories(false), _showDogfightDistanceInKm(false), _showFullNameInAlienInventory(false), _alienInventoryOffsetX(80),
 	  _alienInventoryOffsetBigUnit(32), _hidePediaInfoButton(false),
 	  _extraNerdyPediaInfoType(0), _giveScoreAlsoForResearchedArtifacts(false),
@@ -2994,6 +2994,8 @@ void Mod::loadFile(const FileMap::FileRecord &filerec, ModScript &parsers)
 		}
 	}
 	_performanceBonusFactor = doc["performanceBonusFactor"].as<int>(_performanceBonusFactor);
+	_covertOpsExperienceFactor = doc["covertOpsExperienceFactor"].as<int>(_covertOpsExperienceFactor);
+	_covertOpsIntelBonusFactor = doc["covertOpsIntelBonusFactor"].as<int>(_covertOpsIntelBonusFactor);
 	_enableNewResearchSorting = doc["enableNewResearchSorting"].as<bool>(_enableNewResearchSorting);
 	_displayCustomCategories = doc["displayCustomCategories"].as<int>(_displayCustomCategories);
 	_shareAmmoCategories = doc["shareAmmoCategories"].as<bool>(_shareAmmoCategories);
