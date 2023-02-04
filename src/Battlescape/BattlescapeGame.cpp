@@ -2504,7 +2504,7 @@ void BattlescapeGame::spawnNewSoldier(BattleActionAttack attack, Position positi
 		if (base != nullptr)
 			break;
 	}
-	if (!base) //in case we can't find it
+	if (!base) //in case we can't find the base
 	{
 		base = save->getBases()->at(0);
 	}
@@ -2557,6 +2557,10 @@ void BattlescapeGame::spawnNewSoldier(BattleActionAttack attack, Position positi
 		getSave()->initUnit(newUnit);
 		getTileEngine()->calculateFOV(newUnit->getPosition());  //happens fairly rarely, so do a full recalc for units in range to handle the potential unit visible cache issues.
 		getTileEngine()->applyGravity(newUnit->getTile());
+
+		// we assume that by the design, such a soldier should be also considered as VIP
+		soldier->setJustSaved(true);
+
 
 		base->getSoldiers()->push_back(soldier);
 	}

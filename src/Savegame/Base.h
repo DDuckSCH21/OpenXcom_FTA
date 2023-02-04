@@ -22,6 +22,7 @@
 #include <vector>
 #include <map>
 #include <yaml-cpp/yaml.h>
+#include <cmath>
 #include "../Mod/RuleBaseFacilityFunctions.h"
 
 namespace OpenXcom
