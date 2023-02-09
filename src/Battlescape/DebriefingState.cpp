@@ -1737,23 +1737,38 @@ void DebriefingState::prepareDebriefing()
 					|| !aborted
 					|| (aborted && (*j)->isInExitArea(END_POINT)))
 				{ // so game is not aborted or aborted and unit is on exit area
-					bool notOver = true;
-					if (evacObj) //FtA Logic
+					bool notOver = true; //this is to check is there will be a geoscape soldier spawned to increase it's stats based on BattleUnit experience
+					if (evacObj && soldier == nullptr) //first, we check if the unit can be transformed to some basescape entity
 					{
 						addStat("STR_VIP_SAVED", 1, value);
 						notOver = handleVipRecovery((*j), base, craft, true);
 						vipsSaved++;
-						if (notOver)
-						{
-							soldier = (*j)->getGeoscapeSoldier();
-						}
 					}
+					
 					if (notOver)
 					{
+						if (soldier && soldier->isJustSaved())
+						{
+							addStat("STR_VIP_SAVED", 1, value);
+							if (!(*j)->wasFriendlyFired())
+							{
+								addStat("STR_SOLDIER_JOINED_XCOM", 1, (*j)->getUnitRules()->getValue() / 3);
+							}
+							else // we remove soldiers becuase hostile player actions to counter stunning abuse.
+							{
+								auto it = std::find(base->getSoldiers()->begin(), base->getSoldiers()->end(), soldier);
+								base->getSoldiers()->erase(it);
+								delete soldier;
+								continue;
+							}
+						}
+
 						StatAdjustment statIncrease;
 						(*j)->postMissionProcedures(_game->getMod(), save, battle, statIncrease);
 						if ((*j)->getGeoscapeSoldier())
+						{
 							_soldierStats.push_back(std::pair<Soldier*, UnitStats>((*j)->getGeoscapeSoldier(), statIncrease.statGrowth));
+						}
 						playersInExitArea++;
 
 						recoverItems((*j)->getInventory(), base);
@@ -1796,7 +1811,7 @@ void DebriefingState::prepareDebriefing()
 				else
 				{ // so game is aborted and unit is not on exit area
 					playersSurvived--;
-					if (evacObj)
+					if (evacObj || (soldier && soldier->isJustSaved()))
 					{
 						addStat("STR_VIP_LOST", 1, - (value * 2));
 						++vipsLost;

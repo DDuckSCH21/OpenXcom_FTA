@@ -38,6 +38,7 @@ enum UfoDetection : int
 	DETECTION_NONE = 0x00,
 	DETECTION_RADAR = 0x01,
 	DETECTION_HYPERWAVE = 0x03,
+	DETECTION_GLOBAL = 0x04,
 };
 
 /**

@@ -27,6 +27,7 @@ namespace OpenXcom
 {
 
 class Mod;
+enum SoldierRole : int;
 
 /**
  * Ruleset data structure for the information to transform a soldier.
@@ -53,9 +54,12 @@ private:
 	UnitStats _rerollStats;
 	bool _lowerBoundAtMinStats, _upperBoundAtMaxStats, _upperBoundAtStatCaps;
 	int _upperBoundType;
+	SoldierRole _addRole;
+	std::map<SoldierRole, int> _roleRankRequirements;
 	bool _reset;
 	std::string _soldierBonusType;
 
+	void loadRoleRequirements(const std::map<int, int> &r);
 public:
 	/// Default constructor
 	RuleSoldierTransformation(const std::string &name);
@@ -64,7 +68,7 @@ public:
 	/// Gets the unique name id of the project
 	const std::string &getName() const;
 	/// Gets the description of the project
-	const std::string &getDescription() const { return _description; };
+	const std::string &getDescription() const { return _description; }
 	/// Gets the list weight of the project
 	int getListOrder() const;
 	/// Gets the list of research this project requires
@@ -110,7 +114,7 @@ public:
 	/// Gets how long the transformed soldier should take to recover after completion
 	int getRecoveryTime() const;
 	/// Gets how long the transformating would be in process before applyes
-	int getTransformationTime() const { return _transformationTime; };
+	int getTransformationTime() const { return _transformationTime; }
 	/// Gets the minimum rank a soldier needs to be eligible for this project
 	int getMinRank() const;
 	/// Gets the flat change to a soldier's overall stats when undergoing this project
@@ -146,6 +150,9 @@ public:
 	bool hasUpperBoundAtStatCaps() const;
 	/// Gets whether to use soft upper bound limit or not.
 	bool isSoftLimit(bool isSameSoldierType) const;
+
+	SoldierRole getRoleToAdd() const { return _addRole; }
+	std::map<SoldierRole, int> getRoleRankRequirments() const { return _roleRankRequirements; }
 
 	/// Gets whether or not this project should reset info about all previous transformations and all previously assigned soldier bonuses
 	bool getReset() const;

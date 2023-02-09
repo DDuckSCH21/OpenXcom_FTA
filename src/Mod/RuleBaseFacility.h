@@ -53,7 +53,7 @@ private:
 	bool _connectorsDisabled;
 	int _missileAttraction;
 	int _fakeUnderwater;
-	bool _lift, _hyper, _mind, _grav;
+	bool _lift, _hyper, _mind, _grav, _globalRadar;
 	int _mindPower;
 	int _size, _buildCost, _refundValue, _buildTime, _monthlyCost;
 	std::map<std::string, std::pair<int, int> > _buildCostItems;
@@ -123,6 +123,8 @@ public:
 	bool isLift() const;
 	/// Gets if the facility has hyperwave detection.
 	bool isHyperwave() const;
+	/// Gets if the facility has global detection.
+	bool isGlobalRadar() const { return _globalRadar; }
 	/// Gets if the facility is a mind shield.
 	bool isMindShield() const;
 	/// Gets the mind shield power.

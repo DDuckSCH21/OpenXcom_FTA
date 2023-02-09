@@ -66,7 +66,7 @@ public:
 	/// Saves the unit to YAML.
 	YAML::Node save() const;
 	/// Geoscape logic
-	void think(Game& engine);
+	bool think(Game &engine);
 	void die();
 
 	//getters and setters

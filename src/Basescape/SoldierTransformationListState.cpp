@@ -18,7 +18,6 @@
  */
 #include "SoldierTransformationListState.h"
 #include <algorithm>
-#include <climits>
 #include "../Engine/Action.h"
 #include "../Engine/Game.h"
 #include "../Engine/LocalizedText.h"
@@ -243,7 +242,26 @@ void SoldierTransformationListState::initList()
 		int eligibleSoldiers = 0;
 		for (auto& soldier : *_base->getSoldiers())
 		{
-			if (soldier->getCraft() && soldier->getCraft()->getStatus() == "STR_OUT")
+			bool roleRankPassed = true;
+			if (!transformationRule->getRoleRankRequirments().empty())
+			{
+				for (auto req : transformationRule->getRoleRankRequirments())
+				{
+					if (soldier->getRoleRank(req.first) < req.second)
+					{
+						roleRankPassed = false;
+						break;
+					}
+				}
+			}
+			if (!roleRankPassed)
+			{
+				continue;
+			}
+
+			if ((soldier->getCraft() && soldier->getCraft()->getStatus() == "STR_OUT")
+				|| soldier->getCovertOperation() != 0
+				|| !soldier->getPendingTransformation().empty())
 			{
 				// soldiers outside of the base are not eligible
 				continue;

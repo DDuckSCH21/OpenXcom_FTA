@@ -24,7 +24,6 @@
 #include "../Engine/Language.h"
 #include "../Engine/Options.h"
 #include "../Engine/ScriptBind.h"
-#include "../Engine/RNG.h"
 #include "Craft.h"
 #include "../Savegame/CovertOperation.h"
 #include "../Savegame/ResearchProject.h"
@@ -249,120 +248,6 @@ Soldier::Soldier(const RuleSoldier *rules, Armor *armor, int nationality, int id
 }
 
 /**
- * Alternative way to initialize a new soldier by converting from BattleUnit.
- * @param unit BattleUnit data.
- * @param id Unique soldier id for soldier generation.
- */
-Soldier::Soldier(RuleSoldier* rules, Armor* armor, BattleUnit* unit, int id) :
-	_id(id), _nationality(0),
-	_improvement(0), _psiStrImprovement(0), _rules(rules), _rank(RANK_ROOKIE), _craft(0), _covertOperation(0), _researchProject(0), _production(0), _intelProject(0), _prisoner(0),
-	_gender(GENDER_MALE), _look(LOOK_BLONDE), _lookVariant(0), _missions(0), _kills(0), _stuns(0), _recentlyPromoted(false),
-	_psiTraining(false), _training(false), _returnToTrainingWhenHealed(false), _justSaved(false), _imprisoned(false), _returnToTrainingsWhenOperationOver(NONE),
-	_armor(armor), _replacedArmor(0), _transformedArmor(0), _personalEquipmentArmor(nullptr), _death(0), _diary(new SoldierDiary()),
-	_corpseRecovered(false)
-{
-	if (id != 0)
-	{
-		//soldier
-		_initialStats.tu = unit->getBaseStats()->tu;
-		_initialStats.stamina = unit->getBaseStats()->stamina;
-		_initialStats.health = unit->getBaseStats()->health;
-		_initialStats.mana = unit->getBaseStats()->mana;
-		_initialStats.bravery = unit->getBaseStats()->bravery;
-		_initialStats.reactions = unit->getBaseStats()->reactions;
-		_initialStats.firing = unit->getBaseStats()->firing;
-		_initialStats.throwing = unit->getBaseStats()->throwing;
-		_initialStats.strength = unit->getBaseStats()->strength;
-		_initialStats.psiStrength = unit->getBaseStats()->psiStrength;
-		_initialStats.melee = unit->getBaseStats()->melee;
-		_initialStats.psiSkill = unit->getBaseStats()->psiSkill;
-		//pilot
-		_initialStats.maneuvering = unit->getBaseStats()->maneuvering;
-		_initialStats.missiles = unit->getBaseStats()->missiles;
-		_initialStats.dogfight = unit->getBaseStats()->dogfight;
-		_initialStats.tracking = unit->getBaseStats()->tracking;
-		_initialStats.cooperation = unit->getBaseStats()->cooperation;
-		_initialStats.beams = unit->getBaseStats()->beams;
-		_initialStats.synaptic = unit->getBaseStats()->synaptic;
-		_initialStats.gravity = unit->getBaseStats()->gravity;
-		//agent
-		_initialStats.stealth = unit->getBaseStats()->stealth;
-		_initialStats.perseption = unit->getBaseStats()->perseption;
-		_initialStats.charisma = unit->getBaseStats()->charisma;
-		_initialStats.investigation = unit->getBaseStats()->investigation;
-		_initialStats.deception = unit->getBaseStats()->deception;
-		_initialStats.interrogation = unit->getBaseStats()->interrogation;
-		//scientist
-		_initialStats.physics = unit->getBaseStats()->physics;
-		_initialStats.chemistry = unit->getBaseStats()->chemistry;
-		_initialStats.biology = unit->getBaseStats()->biology;
-		_initialStats.insight = unit->getBaseStats()->insight;
-		_initialStats.data = unit->getBaseStats()->data;
-		_initialStats.computers = unit->getBaseStats()->computers;
-		_initialStats.tactics = unit->getBaseStats()->tactics;
-		_initialStats.materials = unit->getBaseStats()->materials;
-		_initialStats.designing = unit->getBaseStats()->designing;
-		_initialStats.alienTech = unit->getBaseStats()->alienTech;
-		_initialStats.psionics = unit->getBaseStats()->psionics;
-		_initialStats.xenolinguistics = unit->getBaseStats()->xenolinguistics;
-
-		//engineer
-		_initialStats.weaponry = unit->getBaseStats()->weaponry;
-		_initialStats.explosives = unit->getBaseStats()->explosives;
-		_initialStats.efficiency = unit->getBaseStats()->efficiency;
-		_initialStats.microelectronics = unit->getBaseStats()->microelectronics;
-		_initialStats.metallurgy = unit->getBaseStats()->metallurgy;
-		_initialStats.processing = unit->getBaseStats()->processing;
-		_initialStats.hacking = unit->getBaseStats()->hacking;
-		_initialStats.construction = unit->getBaseStats()->construction;
-		_initialStats.diligence = unit->getBaseStats()->diligence;
-		_initialStats.reverseEngineering = unit->getBaseStats()->reverseEngineering;
-
-		//agent
-		_initialStats.stealth = unit->getBaseStats()->stealth;
-		_initialStats.perseption = unit->getBaseStats()->perseption;
-		_initialStats.charisma = unit->getBaseStats()->charisma;
-		_initialStats.investigation = unit->getBaseStats()->investigation;
-		_initialStats.deception = unit->getBaseStats()->deception;
-		_initialStats.interrogation = unit->getBaseStats()->interrogation;
-
-		_currentStats = _initialStats;
-
-		const std::vector<SoldierNamePool*>& names = rules->getNames();
-		if (!names.empty())
-		{
-			_nationality = RNG::generate(0, names.size() - 1);
-			_name = names.at(_nationality)->genName(&_gender, rules->getFemaleFrequency());
-			_callsign = generateCallsign(rules->getNames());
-			_look = (SoldierLook)names.at(_nationality)->genLook(4); // Once we add the ability to mod in extra looks, this will need to reference the ruleset for the maximum amount of looks.
-		}
-		else
-		{
-			// No possible names, just wing it
-			_gender = (RNG::percent(rules->getFemaleFrequency()) ? GENDER_FEMALE : GENDER_MALE);
-			_look = (SoldierLook)RNG::generate(0, 3);
-			_name = (_gender == GENDER_FEMALE) ? "Jane" : "John";
-			_name += " Doe";
-			_callsign = "";
-		}
-		auto role = unit->getRoles();
-		if (!role.empty())
-		{
-			for (auto r : role)
-			{
-				addRole(r);
-			}
-		}
-		else
-		{
-			addRole(ROLE_SOLDIER);
-		}
-	}
-
-	_lookVariant = RNG::seedless(0, RuleSoldier::LookVariantMax - 1);
-}
-
-/**
  *
  */
 Soldier::~Soldier()
@@ -414,6 +299,7 @@ void Soldier::load(const YAML::Node& node, const Mod *mod, SavedGame *save, cons
 		_currentStats = node["currentStats"].as<UnitStats>(_currentStats);
 	}
 	_dailyDogfightExperienceCache = node["dailyDogfightExperienceCache"].as<UnitStats>(_dailyDogfightExperienceCache);
+	_monthlyExperienceCache = node["monthlyExperienceCache"].as<UnitStats>(_monthlyExperienceCache);
 	_dogfightExperience = node["dogfightExperience"].as<UnitStats>(_dogfightExperience);
 	_researchExperience = node["researchExperience"].as<UnitStats>(_researchExperience);
 	_engineerExperience = node["engineerExperience"].as<UnitStats>(_engineerExperience);
@@ -529,7 +415,7 @@ void Soldier::load(const YAML::Node& node, const Mod *mod, SavedGame *save, cons
  * Saves the soldier to a YAML file.
  * @return YAML node.
  */
-YAML::Node Soldier::save(const ScriptGlobal *shared) const
+YAML::Node Soldier::save(const ScriptGlobal *shared)
 {
 	YAML::Node node;
 	node["type"] = _rules->getType();
@@ -549,29 +435,28 @@ YAML::Node Soldier::save(const ScriptGlobal *shared) const
 	}
 	node["initialStats"] = _initialStats;
 	node["currentStats"] = _currentStats;
-	if (_dailyDogfightExperienceCache.firing > 0 || _dailyDogfightExperienceCache.reactions > 0 || _dailyDogfightExperienceCache.bravery > 0)
+
+	if (!_dailyDogfightExperienceCache.empty())
 	{
 		node["dailyDogfightExperienceCache"] = _dailyDogfightExperienceCache;
 	}
-	if (_dogfightExperience.maneuvering > 0 || _dogfightExperience.dogfight > 0 || _dogfightExperience.missiles > 0 ||
-		_dogfightExperience.tracking > 0 || _dogfightExperience.cooperation > 0)
+	if (!_monthlyExperienceCache.empty())
+	{
+		node["monthlyExperienceCache"] = _monthlyExperienceCache;
+	}
+	if (!_dogfightExperience.empty())
 	{
 		node["dogfightExperience"] = _dogfightExperience;
 	}
-	if (_researchExperience.physics > 0 || _researchExperience.chemistry > 0 || _researchExperience.biology > 0 ||
-		_researchExperience.insight > 0 || _researchExperience.data > 0 || _researchExperience.computers > 0 || _researchExperience.tactics > 0
-		|| _researchExperience.materials > 0 || _researchExperience.designing > 0 || _researchExperience.psionics > 0 || _researchExperience.xenolinguistics > 0)
+	if (!_researchExperience.empty())
 	{
 		node["researchExperience"] = _researchExperience;
 	}
-	if (_engineerExperience.weaponry > 0 || _engineerExperience.explosives > 0 || _engineerExperience.efficiency > 0 || _engineerExperience.microelectronics > 0 ||
-		_engineerExperience.metallurgy > 0 || _engineerExperience.processing > 0 || _engineerExperience.hacking > 0 || _engineerExperience.construction > 0 ||
-		_engineerExperience.diligence > 0 || _engineerExperience.alienTech > 0 || _engineerExperience.reverseEngineering > 0)
+	if (!_engineerExperience.empty())
 	{
 		node["engineerExperience"] = _engineerExperience;
 	}
-	if (_intelExperience.stealth > 0 || _intelExperience.perseption > 0 || _intelExperience.charisma > 0 || _intelExperience.investigation > 0 ||
-		_intelExperience.deception > 0 || _intelExperience.interrogation > 0)
+	if (!_intelExperience.empty())
 	{
 		node["intelExperience"] = _intelExperience;
 	}
@@ -2178,19 +2063,27 @@ bool Soldier::isEligibleForTransformation(RuleSoldierTransformation *transformat
 	// Does this soldier meet the minimum stat requirements for the project?
 	UnitStats currentStats = transformationRule->getIncludeBonusesForMinStats() ? _tmpStatsWithSoldierBonuses: _currentStats;
 	UnitStats minStats = transformationRule->getRequiredMinStats();
-	if (currentStats.tu < minStats.tu ||
-		currentStats.stamina < minStats.stamina ||
-		currentStats.health < minStats.health ||
-		currentStats.bravery < minStats.bravery ||
-		currentStats.reactions < minStats.reactions ||
-		currentStats.firing < minStats.firing ||
-		currentStats.throwing < minStats.throwing ||
-		currentStats.melee < minStats.melee ||
-		currentStats.mana < minStats.mana ||
-		currentStats.strength < minStats.strength ||
-		currentStats.psiStrength < minStats.psiStrength ||
-		(currentStats.psiSkill < minStats.psiSkill && minStats.psiSkill != 0)) // The != 0 is required for the "psi training at any time" option, as it sets skill to negative in training
+	bool minStatReq = true;
+	currentStats.fieldLoop(
+		[&](UnitStats::Ptr p)
+		{
+			if (currentStats.*p < minStats.*p)
+				minStatReq = false;
+		}
+	);
+
+	if (!minStatReq)
 		return false;
+
+	// Does the soldier met role rank requirements?
+	if (!transformationRule->getRoleRankRequirments().empty())
+	{
+		for (auto req : transformationRule->getRoleRankRequirments())
+		{
+			if (getRoleRank(req.first) < req.second)
+				return false;
+		}
+	}
 
 	// Does the soldier have the required commendations?
 	for (auto reqd_comm : transformationRule->getRequiredCommendations())
@@ -2302,6 +2195,9 @@ void Soldier::transform(const Mod *mod, RuleSoldierTransformation *transformatio
 		// change stats
 		_currentStats += calculateStatChanges(mod, transformationRule, sourceSoldier, 0, sourceSoldierType);
 
+		// assign new role with rank 1
+		addRole(transformationRule->getRoleToAdd());
+
 		// and randomize stats where needed
 		{
 			Soldier *tmpSoldier = new Soldier(_rules, nullptr, 0 /*nationality*/, _id);
@@ -2378,15 +2274,14 @@ void Soldier::transform(const Mod *mod, RuleSoldierTransformation *transformatio
  */
 void Soldier::postponeTransformation(RuleSoldierTransformation* transformationRule)
 {
+	clearBaseDuty();
 	_training = false;
 	_returnToTrainingWhenHealed = false;
 	_psiTraining = false;
 	_craft = 0;
-	_researchProject = 0;
-	_production = 0;
 
 	int time = transformationRule->getTransformationTime();
-	//time += RNG::generate(time * (-0.2), time * 0.2); // let's see how it goes first
+	time += RNG::generate(time * -0.2, time * 0.2);
 	_pendingTransformations[transformationRule->getName()] = time;
 }
 
@@ -2775,176 +2670,295 @@ void Soldier::resetDailyDogfightExperienceCache()
 	_dailyDogfightExperienceCache = UnitStats::scalar(0);
 }
 
+UnitStats* Soldier::getMonthlyExperienceCache()
+{
+	return &_monthlyExperienceCache;
+}
+
+void Soldier::resetMonthlyExperienceCache()
+{
+	_monthlyExperienceCache = UnitStats::scalar(0);
+}
+
 void Soldier::improvePrimaryStats(UnitStats* exp, SoldierRole role)
 {
 	UnitStats *stats = getCurrentStats();
 	const UnitStats caps = getRules()->getStatCaps();
+	UnitStats origStats = *getCurrentStats();
 	int rate = 0;
 
-	if (exp->bravery && stats->bravery < caps.bravery)
+	// soldier primary stats
 	{
-		stats->bravery += improveStat(exp->bravery, rate, true);
-		if (role == ROLE_SOLDIER || role == ROLE_AGENT || role == ROLE_PILOT)
-			addExperience(role, 1);
-		else
-			addExperience(ROLE_SOLDIER, 1);
+		if (exp->bravery && stats->bravery < caps.bravery)
+		{
+			stats->bravery += improveStat(exp->bravery, rate, true);
+			if (role == ROLE_SOLDIER || role == ROLE_AGENT || role == ROLE_PILOT)
+				addExperience(role, 1);
+			else
+				addExperience(ROLE_SOLDIER, 1);
+		}
+		if (exp->reactions && stats->reactions < caps.reactions)
+		{
+			stats->reactions += improveStat(exp->reactions, rate);
+			if (role == ROLE_SOLDIER || role == ROLE_AGENT)
+				addExperience(role, rate);
+			else
+				addExperience(ROLE_SOLDIER, rate);
+		}
+		if (exp->firing && stats->firing < caps.firing)
+		{
+			stats->firing += improveStat(exp->firing, rate);
+			if (role == ROLE_SOLDIER || role == ROLE_AGENT)
+				addExperience(role, rate);
+			else
+				addExperience(ROLE_SOLDIER, rate);
+		}
+		if (exp->melee && stats->melee < caps.melee)
+		{
+			stats->melee += improveStat(exp->melee, rate);
+			if (role == ROLE_SOLDIER || role == ROLE_AGENT)
+				addExperience(role, rate);
+			else
+				addExperience(ROLE_SOLDIER, rate);
+		}
+		if (exp->throwing && stats->throwing < caps.throwing)
+		{
+			stats->throwing += improveStat(exp->throwing, rate);
+			if (role == ROLE_SOLDIER || role == ROLE_AGENT)
+				addExperience(role, rate);
+			else
+				addExperience(ROLE_SOLDIER, rate);
+		}
+		if (exp->psiSkill && stats->psiSkill < caps.psiSkill)
+		{
+			stats->psiSkill += improveStat(exp->psiSkill, rate);
+			if (role == ROLE_SOLDIER || role == ROLE_AGENT)
+				addExperience(role, rate);
+			else
+				addExperience(ROLE_SOLDIER, rate);
+		}
+		if (exp->psiStrength && stats->psiStrength < caps.psiStrength)
+		{
+			stats->psiStrength += improveStat(exp->psiStrength, rate);
+			if (role == ROLE_SOLDIER || role == ROLE_AGENT)
+				addExperience(role, rate);
+			else
+				addExperience(ROLE_SOLDIER, rate);
+		}
+		if (exp->mana && stats->mana < caps.mana)
+		{
+			stats->mana += improveStat(exp->mana, rate);
+			if (role == ROLE_SOLDIER || role == ROLE_AGENT)
+				addExperience(role, rate);
+			else
+				addExperience(ROLE_SOLDIER, rate);
+		}
 	}
-	if (exp->reactions && stats->reactions < caps.reactions)
-	{
-		stats->reactions += improveStat(exp->reactions, rate);
-		if (role == ROLE_SOLDIER || role == ROLE_AGENT)
-			addExperience(role, rate);
-		else
-			addExperience(ROLE_SOLDIER, rate);
-	}
-	if (exp->firing && stats->firing < caps.firing)
-	{
-		stats->firing += improveStat(exp->firing, rate);
-		if (role == ROLE_SOLDIER || role == ROLE_AGENT)
-			addExperience(role, rate);
-		else
-			addExperience(ROLE_SOLDIER, rate);
-	}
-	if (exp->melee && stats->melee < caps.melee)
-	{
-		stats->melee += improveStat(exp->melee, rate);
-		if (role == ROLE_SOLDIER || role == ROLE_AGENT)
-			addExperience(role, rate);
-		else
-			addExperience(ROLE_SOLDIER, rate);
-	}
-	if (exp->throwing && stats->throwing < caps.throwing)
-	{
-		stats->throwing += improveStat(exp->throwing, rate);
-		if (role == ROLE_SOLDIER || role == ROLE_AGENT)
-			addExperience(role, rate);
-		else
-			addExperience(ROLE_SOLDIER, rate);
-	}
-	if (exp->psiSkill && stats->psiSkill < caps.psiSkill)
-	{
-		stats->psiSkill += improveStat(exp->psiSkill, rate);
-		if (role == ROLE_SOLDIER || role == ROLE_AGENT)
-			addExperience(role, rate);
-		else
-			addExperience(ROLE_SOLDIER, rate);
-	}
-	if (exp->psiStrength && stats->psiStrength < caps.psiStrength)
-	{
-		stats->psiStrength += improveStat(exp->psiStrength, rate);
-		if (role == ROLE_SOLDIER || role == ROLE_AGENT)
-			addExperience(role, rate);
-		else
-			addExperience(ROLE_SOLDIER, rate);
-	}
-	if (exp->mana && stats->mana < caps.mana)
-	{
-		stats->mana += improveStat(exp->mana, rate);
-		if (role == ROLE_SOLDIER || role == ROLE_AGENT)
-			addExperience(role, rate);
-		else
-			addExperience(ROLE_SOLDIER, rate);
-	}
-
+	
 	//pilot stats
-	if (exp->maneuvering && stats->maneuvering < caps.maneuvering)
 	{
-		stats->maneuvering += improveStat(exp->maneuvering, rate);
-		addExperience(ROLE_PILOT, rate);
+		if (exp->maneuvering && stats->maneuvering < caps.maneuvering)
+		{
+			stats->maneuvering += improveStat(exp->maneuvering, rate);
+			addExperience(ROLE_PILOT, rate);
+		}
+		if (exp->missiles && stats->missiles < caps.missiles)
+		{
+			stats->missiles += improveStat(exp->missiles, rate);
+			addExperience(ROLE_PILOT, rate);
+		}
+		if (exp->dogfight && stats->dogfight < caps.dogfight)
+		{
+			stats->dogfight += improveStat(exp->dogfight, rate);
+			addExperience(ROLE_PILOT, rate);
+		}
+		if (exp->tracking && stats->tracking < caps.tracking)
+		{
+			stats->tracking += improveStat(exp->tracking, rate);
+			int reducedRate = RNG::generate(0, rate); // non-combat skill
+			addExperience(ROLE_PILOT, reducedRate);
+		}
+		if (exp->cooperation && stats->cooperation < caps.cooperation)
+		{
+			stats->cooperation += improveStat(exp->cooperation, rate);
+			addExperience(ROLE_PILOT, rate);
+		}
+		if (exp->beams && stats->beams < caps.beams)
+		{
+			stats->beams += improveStat(exp->beams, rate);
+			addExperience(ROLE_PILOT, rate);
+		}
+		if (exp->synaptic && stats->synaptic < caps.synaptic)
+		{
+			stats->synaptic += improveStat(exp->synaptic, rate);
+			addExperience(ROLE_PILOT, rate);
+		}
+		if (exp->gravity && stats->gravity < caps.gravity)
+		{
+			stats->gravity += improveStat(exp->gravity, rate);
+			addExperience(ROLE_PILOT, rate);
+		}
 	}
-	if (exp->missiles && stats->missiles < caps.missiles)
-	{
-		stats->missiles += improveStat(exp->missiles, rate);
-		addExperience(ROLE_PILOT, rate);
-	}
-	if (exp->dogfight && stats->dogfight < caps.dogfight)
-	{
-		stats->dogfight += improveStat(exp->dogfight, rate);
-		addExperience(ROLE_PILOT, rate);
-	}
-	if (exp->tracking && stats->tracking < caps.tracking)
-	{
-		stats->tracking += improveStat(exp->tracking, rate);
-		int reducedRate = RNG::generate(0, rate); // non-combat skill
-		addExperience(ROLE_PILOT, reducedRate);
-	}
-	if (exp->cooperation && stats->cooperation < caps.cooperation)
-	{
-		stats->cooperation += improveStat(exp->cooperation, rate);
-		addExperience(ROLE_PILOT, rate);
-	}
-	if (exp->beams && stats->beams < caps.beams)
-	{
-		stats->beams += improveStat(exp->beams, rate);
-		addExperience(ROLE_PILOT, rate);
-	}
-	if (exp->synaptic && stats->synaptic < caps.synaptic)
-	{
-		stats->synaptic += improveStat(exp->synaptic, rate);
-		addExperience(ROLE_PILOT, rate);
-	}
-	if (exp->gravity && stats->gravity < caps.gravity)
-	{
-		stats->gravity += improveStat(exp->gravity, rate);
-		addExperience(ROLE_PILOT, rate);
-	}
-
+	
 	//science stats
-	if (exp->physics && stats->physics < caps.physics)
 	{
-		stats->physics += improveStat(exp->physics, rate);
-		addExperience(ROLE_SCIENTIST, rate);
+		if (exp->physics && stats->physics < caps.physics)
+		{
+			stats->physics += improveStat(exp->physics, rate);
+			addExperience(ROLE_SCIENTIST, rate);
+		}
+		if (exp->chemistry && stats->chemistry < caps.chemistry)
+		{
+			stats->chemistry += improveStat(exp->chemistry, rate);
+			addExperience(ROLE_SCIENTIST, rate);
+		}
+		if (exp->biology && stats->biology < caps.biology)
+		{
+			stats->biology += improveStat(exp->biology, rate);
+			addExperience(ROLE_SCIENTIST, rate);
+		}
+		if (exp->insight && stats->insight < caps.insight)
+		{
+			stats->insight += improveStat(exp->insight, rate);
+			addExperience(ROLE_SCIENTIST, rate);
+		}
+		if (exp->data && stats->data < caps.data)
+		{
+			stats->data += improveStat(exp->data, rate);
+			if (role == ROLE_SCIENTIST || role == ROLE_AGENT)
+				addExperience(role, rate);
+			else
+				addExperience(ROLE_SCIENTIST, rate);
+		}
+		if (exp->computers && stats->computers < caps.computers)
+		{
+			stats->computers += improveStat(exp->computers, rate);
+			addExperience(ROLE_SCIENTIST, rate);
+		}
+		if (exp->tactics && stats->tactics < caps.tactics)
+		{
+			stats->tactics += improveStat(exp->tactics, rate);
+			addExperience(ROLE_SCIENTIST, rate);
+		}
+		if (exp->materials && stats->materials < caps.materials)
+		{
+			stats->materials += improveStat(exp->materials, rate);
+			addExperience(ROLE_SCIENTIST, rate);
+		}
+		if (exp->designing && stats->designing < caps.designing)
+		{
+			stats->designing += improveStat(exp->designing, rate);
+			addExperience(ROLE_SCIENTIST, rate);
+		}
+		if (exp->psionics && stats->psionics < caps.psionics)
+		{
+			stats->psionics += improveStat(exp->psionics, rate);
+			addExperience(ROLE_SCIENTIST, rate);
+		}
+		if (exp->xenolinguistics && stats->xenolinguistics < caps.xenolinguistics)
+		{
+			stats->xenolinguistics += improveStat(exp->xenolinguistics, rate);
+			addExperience(ROLE_SCIENTIST, rate);
+		}
 	}
-	if (exp->chemistry && stats->chemistry < caps.chemistry)
+	
+	//engineer stats
 	{
-		stats->chemistry += improveStat(exp->chemistry, rate);
-		addExperience(ROLE_SCIENTIST, rate);
+		if (exp->weaponry && stats->weaponry < caps.weaponry)
+		{
+			stats->weaponry += improveStat(exp->weaponry, rate);
+			addExperience(ROLE_ENGINEER, rate);
+		}
+		if (exp->explosives && stats->explosives < caps.explosives)
+		{
+			stats->explosives += improveStat(exp->explosives, rate);
+			addExperience(ROLE_ENGINEER, rate);
+		}
+		if (exp->efficiency && stats->efficiency < caps.efficiency)
+		{
+			stats->efficiency += improveStat(exp->efficiency, rate);
+			addExperience(ROLE_ENGINEER, rate);
+		}
+		if (exp->microelectronics && stats->microelectronics < caps.microelectronics)
+		{
+			stats->microelectronics += improveStat(exp->microelectronics, rate);
+			addExperience(ROLE_ENGINEER, rate);
+		}
+		if (exp->metallurgy && stats->metallurgy < caps.metallurgy)
+		{
+			stats->metallurgy += improveStat(exp->metallurgy, rate);
+			addExperience(ROLE_ENGINEER, rate);
+		}
+		if (exp->processing && stats->processing < caps.processing)
+		{
+			stats->processing += improveStat(exp->processing, rate);
+			addExperience(ROLE_ENGINEER, rate);
+		}
+		if (exp->hacking && stats->hacking < caps.hacking)
+		{
+			stats->hacking += improveStat(exp->hacking, rate);
+			if (role == ROLE_ENGINEER || role == ROLE_AGENT)
+				addExperience(role, rate);
+			else
+				addExperience(ROLE_ENGINEER, rate);
+		}
+		if (exp->construction && stats->construction < caps.construction)
+		{
+			stats->construction += improveStat(exp->construction, rate);
+			addExperience(ROLE_ENGINEER, rate);
+		}
+		if (exp->diligence && stats->diligence < caps.diligence)
+		{
+			stats->diligence += improveStat(exp->diligence, rate);
+			addExperience(ROLE_ENGINEER, rate);
+		}
+		if (exp->alienTech && stats->alienTech < caps.alienTech)
+		{
+			stats->alienTech += improveStat(exp->alienTech, rate);
+			addExperience(ROLE_ENGINEER, rate);
+		}
+		if (exp->reverseEngineering && stats->reverseEngineering < caps.reverseEngineering)
+		{
+			stats->reverseEngineering += improveStat(exp->reverseEngineering, rate);
+			addExperience(ROLE_ENGINEER, rate);
+		}
 	}
-	if (exp->biology && stats->biology < caps.biology)
+	
+	//agent stats
 	{
-		stats->biology += improveStat(exp->biology, rate);
-		addExperience(ROLE_SCIENTIST, rate);
+		if (exp->stealth && stats->stealth < caps.stealth)
+		{
+			stats->stealth += improveStat(exp->stealth, rate);
+			addExperience(ROLE_AGENT, rate);
+		}
+		if (exp->perseption && stats->perseption < caps.perseption)
+		{
+			stats->perseption += improveStat(exp->perseption, rate);
+			addExperience(ROLE_AGENT, rate);
+		}
+		if (exp->charisma && stats->charisma < caps.charisma)
+		{
+			stats->charisma += improveStat(exp->charisma, rate);
+			addExperience(ROLE_AGENT, rate);
+		}
+		if (exp->investigation && stats->investigation < caps.investigation)
+		{
+			stats->investigation += improveStat(exp->investigation, rate);
+			addExperience(ROLE_AGENT, rate);
+		}
+		if (exp->deception && stats->deception < caps.deception)
+		{
+			stats->deception += improveStat(exp->deception, rate);
+			addExperience(ROLE_AGENT, rate);
+		}
+		if (exp->interrogation && stats->interrogation < caps.interrogation)
+		{
+			stats->interrogation += improveStat(exp->interrogation, rate);
+			addExperience(ROLE_AGENT, rate);
+		}
 	}
-	if (exp->insight && stats->insight < caps.insight)
-	{
-		stats->insight += improveStat(exp->insight, rate);
-		addExperience(ROLE_SCIENTIST, rate);
-	}
-	if (exp->data && stats->data < caps.data)
-	{
-		stats->data += improveStat(exp->data, rate);
-		addExperience(ROLE_SCIENTIST, rate);
-	}
-	if (exp->computers && stats->computers < caps.computers)
-	{
-		stats->computers += improveStat(exp->computers, rate);
-		addExperience(ROLE_SCIENTIST, rate);
-	}
-	if (exp->tactics && stats->tactics < caps.tactics)
-	{
-		stats->tactics += improveStat(exp->tactics, rate);
-		addExperience(ROLE_SCIENTIST, rate);
-	}
-	if (exp->materials && stats->materials < caps.materials)
-	{
-		stats->materials += improveStat(exp->materials, rate);
-		addExperience(ROLE_SCIENTIST, rate);
-	}
-	if (exp->designing && stats->designing < caps.designing)
-	{
-		stats->designing += improveStat(exp->designing, rate);
-		addExperience(ROLE_SCIENTIST, rate);
-	}
-	if (exp->psionics && stats->psionics < caps.psionics)
-	{
-		stats->psionics += improveStat(exp->psionics, rate);
-		addExperience(ROLE_SCIENTIST, rate);
-	}
-	if (exp->xenolinguistics && stats->xenolinguistics < caps.xenolinguistics)
-	{
-		stats->xenolinguistics += improveStat(exp->xenolinguistics, rate);
-		addExperience(ROLE_SCIENTIST, rate);
-	}
+	
+	_monthlyExperienceCache += *getCurrentStats() - origStats;
 }
 
 bool Soldier::rolePromoteSoldier(SoldierRole promotionRole)

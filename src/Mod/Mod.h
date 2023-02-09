@@ -250,7 +250,7 @@ private:
 	bool _healthReplenishAfterMission = true;
 	std::string _manaUnlockResearch;
 
-	int _hackingBaseTuCost, _hackingFirewallBaseTuCost, _hackingFirewallBaseHpCost;
+	int _hackingBaseTuCost, _hackingFirewallBaseTuCost, _hackingFirewallBaseHpCost, _hackingStatToTuCoef, _hackingStatToHpCoef;
 	std::string _loseMoney, _loseRating, _loseDefeat;
 	int _ufoGlancingHitThreshold, _ufoBeamWidthParameter;
 	int _ufoTractorBeamSizeModifiers[5];
@@ -260,7 +260,7 @@ private:
 	int _soldiersPerSergeant, _soldiersPerCaptain, _soldiersPerColonel, _soldiersPerCommander;
 	int _pilotAccuracyZeroPoint, _pilotAccuracyRange, _pilotReactionsZeroPoint, _pilotReactionsRange;
 	int _pilotBraveryThresholds[3], _pilotCooperationZeroPoint, _pilotCooperationRange, _pilotTrackingZeroPoint, _pilotTrackingRange;
-	int _performanceBonusFactor, _covertOpsExperience;
+	int _performanceBonusFactor, _covertOpsExperienceFactor, _covertOpsIntelBonusFactor;
 	bool _enableNewResearchSorting;
 	int _displayCustomCategories;
 	bool _shareAmmoCategories, _showDogfightDistanceInKm, _showFullNameInAlienInventory;
@@ -943,7 +943,7 @@ public:
 	/// Gets the research topic required for unlocking xenolinguistics stat.
 	const std::string& getAlienTechUnlockResearch() const { return _alienTechUnlockResearch; }
 	/// Gets the research topic required for unlocking xenolinguistics stat.
-	const std::string &getXenologyUnlockResearch() const { return _xenologyUnlockResearch; }
+	const std::string &getXenolinguisticsUnlockResearch() const { return _xenologyUnlockResearch; }
 	/// Gets the research topic required for unlocking beam operations stat.
 	const std::string &getBeamOperationsUnlockResearch() const { return _craftsBeamUnlockResearch; }
 	/// Gets the research topic required for unlocking synapsis stat.
@@ -1001,8 +1001,10 @@ public:
 	int getPilotBraveryThresholdNormal() const { return _pilotBraveryThresholds[2]; }
 	/// Gets a performance bonus factor
 	int getPerformanceBonusFactor() const { return _performanceBonusFactor; }
-	/// Get coveert operations experience gain factor.
-	int getCovertOpsExpFactor() const { return _covertOpsExperience; }
+	/// Get covert operations experience gain factor.
+	int getCovertOpsExpFactor() const { return _covertOpsExperienceFactor; }
+	/// Get covert operations intel bonus factor.
+	int getCovertOpsIntelBonusFactor() const { return _covertOpsIntelBonusFactor; }
 	/// Should the player have the option to sort the 'New Research' list?
 	bool getEnableNewResearchSorting() const { return _enableNewResearchSorting; }
 	/// Should custom categories be used in Buy/Sell/Transfer GUIs? 0=no, 1=yes, custom only, 2=both vanilla and custom.
@@ -1153,6 +1155,8 @@ public:
 	int getHackingBaseTuCost() const { return _hackingBaseTuCost; }
 	int getHackingFirewallBaseTuCost() const { return _hackingFirewallBaseTuCost; }
 	int getHackingFirewallBaseHpCost() const { return _hackingFirewallBaseHpCost; }
+	int getHackingStatToTuCoef() const { return _hackingStatToTuCoef; }
+	int getHackingStatToHpCoef() const { return _hackingStatToTuCoef; }
 	/// Get settings for loyalty
 	int getLoyaltyCoefBattlescape() const { return _coefBattlescape; };
 	int getLoyaltyCoefGeoscape() const { return _coefGeoscape; };

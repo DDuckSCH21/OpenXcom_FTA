@@ -18,21 +18,21 @@
  */
 #include "RuleSoldierTransformation.h"
 #include "Mod.h"
+#include "RuleSoldier.h"
 
 namespace OpenXcom
 {
-
 /**
  * Constructor for a soldier transformation project (necromancy, cloning, ascending!)
  * @param name The unique project name id
  */
-RuleSoldierTransformation::RuleSoldierTransformation(const std::string &name) :
-	_name(name),
-	_keepSoldierArmor(false), _createsClone(false), _needsCorpseRecovered(true),
-	_allowsDeadSoldiers(false), _allowsLiveSoldiers(false), _allowsWoundedSoldiers(false),
-	_listOrder(0), _cost(0), _transferTime(0), _recoveryTime(0), _transformationTime(0), _minRank(0), _includeBonusesForMinStats(false),
-	_showMinMax(false), _lowerBoundAtMinStats(true), _upperBoundAtMaxStats(false), _upperBoundAtStatCaps(false), _upperBoundType(0),
-	_reset(false)
+RuleSoldierTransformation::RuleSoldierTransformation(const std::string &name)
+	: _name(name),
+	  _keepSoldierArmor(false), _createsClone(false), _needsCorpseRecovered(true),
+	  _allowsDeadSoldiers(false), _allowsLiveSoldiers(false), _allowsWoundedSoldiers(false),
+	  _listOrder(0), _cost(0), _transferTime(0), _recoveryTime(0), _transformationTime(0), _minRank(0), _includeBonusesForMinStats(false),
+	  _showMinMax(false), _lowerBoundAtMinStats(true), _upperBoundAtMaxStats(false), _upperBoundAtStatCaps(false), _upperBoundType(0), _addRole(ROLE_NONE),
+	  _reset(false)
 {
 }
 
@@ -92,6 +92,9 @@ void RuleSoldierTransformation::load(const YAML::Node &node, Mod* mod, int listO
 	_upperBoundAtMaxStats = node["upperBoundAtMaxStats"].as<bool >(_upperBoundAtMaxStats);
 	_upperBoundAtStatCaps = node["upperBoundAtStatCaps"].as<bool >(_upperBoundAtStatCaps);
 	_upperBoundType = node["upperBoundType"].as<int>(_upperBoundType);
+	_addRole = (SoldierRole)node["addRole"].as<int>(_addRole);
+	if (node["roleRankRequirements"])
+		loadRoleRequirements(node["roleRankRequirements"].as<std::map<int, int>>());
 	_reset = node["reset"].as<bool >(_reset);
 	_soldierBonusType = node["soldierBonusType"].as<std::string >(_soldierBonusType);
 }
@@ -372,6 +375,16 @@ bool RuleSoldierTransformation::getReset() const
 const std::string &RuleSoldierTransformation::getSoldierBonusType() const
 {
 	return _soldierBonusType;
+}
+
+void RuleSoldierTransformation::loadRoleRequirements(const std::map<int, int>& r)
+{
+	_roleRankRequirements.clear();
+	for (auto i : r)
+	{
+		SoldierRole role = static_cast<SoldierRole>(i.first);
+		_roleRankRequirements.emplace(std::make_pair(role, i.second));
+	}
 }
 
 }

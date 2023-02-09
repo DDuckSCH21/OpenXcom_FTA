@@ -60,8 +60,8 @@ namespace OpenXcom
  * Initializes an empty base.
  * @param mod Pointer to mod.
  */
-Base::Base(const Mod *mod) : Target(), _mod(mod), _scientists(0), _engineers(0), _inBattlescape(false),
-	_retaliationTarget(false), _retaliationMission(nullptr), _fakeUnderwater(false)
+Base::Base(const Mod *mod): Target(), _mod(mod), _scientists(0), _engineers(0), _trackingBonus(0), _operationsBonus(0), _deploymentHintsBonus(0), _inBattlescape(false),
+	  _retaliationTarget(false), _retaliationMission(nullptr), _fakeUnderwater(false)
 {
 	_items = new ItemContainer();
 }
@@ -410,6 +410,9 @@ void Base::load(const YAML::Node &node, SavedGame *save, bool newGame, bool newB
 		}
 	}
 	_fakeUnderwater = node["fakeUnderwater"].as<bool>(_fakeUnderwater);
+	_trackingBonus = node["trackingBonus"].as<int>(_trackingBonus);
+	_operationsBonus = node["operationsBonus"].as<int>(_operationsBonus);
+	_deploymentHintsBonus = node["deploymentHints"].as<int>(_deploymentHintsBonus);
 
 	isOverlappingOrOverflowing(); // don't crash, just report in the log file...
 }
@@ -552,6 +555,9 @@ YAML::Node Base::save() const
 		node["retaliationMissionUniqueId"] = _retaliationMission->getId();
 	if (_fakeUnderwater)
 		node["fakeUnderwater"] = _fakeUnderwater;
+	node["trackingBonus"] = _trackingBonus;
+	node["operationsBonus"] = _operationsBonus;
+	node["deploymentHintsBonus"] = _deploymentHintsBonus;
 	return node;
 }
 
@@ -749,7 +755,7 @@ void Base::setEngineers(int engineers)
  * @param alreadyDedected Was ufo already detected, `true` mean we track it without probability.
  * @return 0 - not detected, 1 - detected by conventional radar, 2 - detected by hyper-wave decoder.
  */
-UfoDetection Base::detect(const Ufo *target, const SavedGame *save, bool alreadyTracked) const
+UfoDetection Base::detect(const Ufo *target, const SavedGame *save, bool alreadyTracked, bool globalSearch) const
 {
 	auto distance = XcomDistance(getDistance(target));
 	auto hyperwave = false;
@@ -757,6 +763,7 @@ UfoDetection Base::detect(const Ufo *target, const SavedGame *save, bool already
 	auto hyperwave_chance = 0;
 	auto radar_max_range = 0;
 	auto radar_chance = 0;
+	bool fta = save->isFtAGame();
 
 	for (std::vector<BaseFacility*>::const_iterator i = _facilities.begin(); i != _facilities.end(); ++i)
 	{
@@ -764,12 +771,13 @@ UfoDetection Base::detect(const Ufo *target, const SavedGame *save, bool already
 		{
 			continue;
 		}
-		if ((*i)->getRules()->getRadarRange() >= distance)
+		auto rule = (*i)->getRules();
+		if (rule->getRadarRange() >= distance || (rule->isGlobalRadar() && globalSearch))
 		{
 			int radarChance = (*i)->getRules()->getRadarChance();
 			if ((*i)->getRules()->isHyperwave())
 			{
-				if (radarChance == 100 || RNG::percent(radarChance))
+				if (radarChance == 100 || RNG::percent(radarChance) || fta)
 				{
 					hyperwave = true;
 				}
@@ -790,6 +798,11 @@ UfoDetection Base::detect(const Ufo *target, const SavedGame *save, bool already
 		}
 	}
 
+	if (radar_chance > 0 && globalSearch)
+	{
+		radar_chance += getTrackingBonusReal();
+	}
+
 	auto detectionChance = 0;
 	auto detectionType = DETECTION_NONE;
 
@@ -803,7 +816,14 @@ UfoDetection Base::detect(const Ufo *target, const SavedGame *save, bool already
 		else if (radar_chance > 0)
 		{
 			detectionType = DETECTION_RADAR;
-			detectionChance = 100;
+			if (fta && RNG::percent(10)) //UFO will attempt to drop tracking
+			{
+				detectionChance = RNG::generate(radar_chance, 100);
+			}
+			else
+			{
+				detectionChance = 100;
+			}
 		}
 	}
 	else
@@ -811,7 +831,14 @@ UfoDetection Base::detect(const Ufo *target, const SavedGame *save, bool already
 		if (hyperwave)
 		{
 			detectionType = DETECTION_HYPERWAVE;
-			detectionChance = 100;
+			if (fta)
+			{
+				detectionChance = hyperwave_chance;
+			}
+			else
+			{
+				detectionChance = 100;
+			}
 		}
 		else if (radar_chance > 0)
 		{
@@ -825,7 +852,10 @@ UfoDetection Base::detect(const Ufo *target, const SavedGame *save, bool already
 
 	work.execute(target->getRules()->getScript<ModScript::DetectUfoFromBase>(), args);
 
-	return RNG::percent(args.getSecond()) ? (UfoDetection)args.getFirst() : DETECTION_NONE;
+	if (RNG::percent(args.getSecond()))
+		return (UfoDetection)args.getFirst();
+	else
+		return DETECTION_NONE;
 }
 
 /**
@@ -2878,6 +2908,36 @@ std::vector<Craft*>::iterator Base::removeCraft(Craft *craft, bool unload)
 		}
 	}
 	return c;
+}
+
+int Base::getRadarStrength() const
+{
+	int power = 0;
+	for (std::vector<BaseFacility*>::const_iterator i = _facilities.begin(); i != _facilities.end(); ++i)
+	{
+		if ((*i)->getBuildTime() != 0)
+		{
+			continue;
+		}
+		power += (*i)->getRules()->getRadarRange() * (*i)->getRules()->getRadarChance();
+	}
+	return power;
+}
+
+int Base::getGlobalRadarStrenght() const
+{
+	int power = 0;
+	for (std::vector<BaseFacility*>::const_iterator i = _facilities.begin(); i != _facilities.end(); ++i)
+	{
+		if ((*i)->getBuildTime() != 0 || !(*i)->getRules()->isGlobalRadar())
+		{
+			continue;
+		}
+		power += (*i)->getRules()->getRadarChance();
+	}
+	power += getTrackingBonusReal();
+
+	return power;
 }
 
 }
